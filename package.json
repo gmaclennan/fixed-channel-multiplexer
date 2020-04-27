@@ -1,0 +1,46 @@
+{
+  "name": "fixed-channel-multiplexer",
+  "version": "0.0.0",
+  "description": "Multiplex streams over a single duplex stream with fixed channel ids",
+  "main": "index.js",
+  "scripts": {
+    "type": "tsc",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "multiplex",
+    "stream",
+    "encode",
+    "decode",
+    "channel",
+    "duplex"
+  ],
+  "author": "Gregor MacLennan",
+  "license": "ISC",
+  "dependencies": {
+    "duplexify": "^4.1.1",
+    "is-stream": "^2.0.0",
+    "length-prefixed-stream": "^2.0.0",
+    "pump": "^3.0.0",
+    "through2": "^3.0.1",
+    "varint": "^5.0.0"
+  },
+  "devDependencies": {
+    "@types/duplexify": "^3.6.0",
+    "@types/node": "^13.13.4",
+    "@types/pump": "^1.1.0",
+    "@types/pumpify": "^1.4.1",
+    "@types/through2": "^2.0.34",
+    "@types/varint": "^5.0.0",
+    "block-stream2": "^2.0.0",
+    "pumpify": "^2.0.1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/gmaclennan/fixed-channel-multiplexer.git"
+  },
+  "bugs": {
+    "url": "https://github.com/gmaclennan/fixed-channel-multiplexer/issues"
+  },
+  "homepage": "https://github.com/gmaclennan/fixed-channel-multiplexer#readme"
+}
