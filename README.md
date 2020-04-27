@@ -41,7 +41,7 @@ npm install github:gmaclennan/fixed-channel-multiplexer
 
 ## Usage
 
-See [example.js](example.js)
+See [example.js](example.js) and [example2.js](example2.js)
 
 ```js
 const channelizer = require('fixed-channel-multiplexer')

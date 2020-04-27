@@ -26,6 +26,7 @@
     "varint": "^5.0.0"
   },
   "devDependencies": {
+    "@msgpack/msgpack": "^1.12.1",
     "@types/duplexify": "^3.6.0",
     "@types/node": "^13.13.4",
     "@types/pump": "^1.1.0",
