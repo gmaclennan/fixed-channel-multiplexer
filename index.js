@@ -36,7 +36,7 @@ const varintMaxLength = varint.encodingLength(Number.MAX_SAFE_INTEGER)
  * @returns {DuplexStream[]}
  */
 module.exports = function channelize (duplex, channels) {
-  assert(isStream.duplex(duplex), 'Must pass duplex stream as 1st arg.')
+  assert(isStream(duplex), 'Must pass stream as 1st arg.')
   assert(Array.isArray(channels), '2nd arg must be an array')
   channels.forEach(validateChannel)
 
