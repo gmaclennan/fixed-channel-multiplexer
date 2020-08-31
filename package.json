@@ -22,7 +22,6 @@
     "is-stream": "^2.0.0",
     "length-prefixed-stream": "^2.0.0",
     "pump": "^3.0.0",
-    "through2": "^3.0.1",
     "varint": "^5.0.0"
   },
   "devDependencies": {
@@ -34,6 +33,8 @@
     "@types/through2": "^2.0.34",
     "@types/varint": "^5.0.0",
     "block-stream2": "^2.0.0",
+    "into-stream": "^6.0.0",
+    "native-duplexpair": "^1.0.0",
     "pumpify": "^2.0.1"
   },
   "repository": {

@@ -1,10 +1,9 @@
 const duplexify = require('duplexify')
 const lpstream = require('length-prefixed-stream')
-const through = require('through2')
 const pump = require('pump')
 const varint = require('varint')
-const { PassThrough } = require('stream')
 const isStream = require('is-stream')
+const stream = require('stream')
 const assert = require('assert')
 
 /** @typedef {import('stream').Duplex} DuplexStream */
@@ -40,39 +39,24 @@ module.exports = function channelize (duplex, channels) {
   assert(Array.isArray(channels), '2nd arg must be an array')
   channels.forEach(validateChannel)
 
-  /** @type {Map<number, TransformStream>} */
-  const decoders = new Map()
   /** @type {DuplexStream[]} */
   const decodedStreams = []
+  const lpDecodeStream = lpstream.decode()
+  pump(duplex, lpDecodeStream)
 
   channels.forEach((val, i) => {
     const ch = typeof val === 'number' ? { id: val } : val
     const encoder = createChannelEncoder(ch)
-    const decoder = createDecoder(ch)
-    const stream = duplexify(encoder, decoder, { objectMode: !!ch.encoding })
+    const decoder = createChannelDecoder(ch)
+    const stream = duplexify(encoder, decoder, { objectMode: !!ch.encoding, highWaterMark: 0 })
     decodedStreams.push(stream)
-    decoders.set(ch.id, decoder)
     const lpEncodeStream = lpstream.encode()
     // Errors bubble up here...
     pump(encoder, lpEncodeStream)
     // ...but don't destroy the encoded stream, and don't end it
     lpEncodeStream.pipe(duplex, { end: false })
+    pump(lpDecodeStream, decoder)
   })
-
-  const channelizer = through((chunk, enc, cb) => {
-    try {
-      const channelId = varint.decode(chunk.slice(0, varintMaxLength))
-      const data = chunk.slice(varint.decode.bytes)
-      const decoder = decoders.get(channelId)
-      if (decoder) decoder.write(data)
-      cb()
-    } catch (err) {
-      // TODO: Should we just ignore invalid chunks?
-      cb(err)
-    }
-  })
-  // TODO: Ensure errors in decode don't destroy duplex
-  pump(duplex, lpstream.decode(), channelizer)
 
   return decodedStreams
 }
@@ -82,28 +66,54 @@ function bufferPassthrough (x) {
   return typeof x === 'string' ? Buffer.from(x) : x
 }
 
-/** @param {Channel} ch */
+/**
+ * @param {Channel} ch
+ * @returns {TransformStream}
+ */
 function createChannelEncoder (ch) {
   const offset = varint.encodingLength(ch.id)
   const encodedChannel = varint.encode(ch.id, Buffer.allocUnsafe(offset))
   const encode = ch.encoding ? ch.encoding.encode : bufferPassthrough
 
-  return through.obj((chunk, enc, cb) => {
-    const encoded = encode(chunk)
-    const data = Buffer.allocUnsafe(offset + encoded.length)
-    encodedChannel.copy(data)
-    encoded.copy(data, offset)
-    cb(null, data)
+  return new stream.Transform({
+    highWaterMark: 0,
+    transform(chunk, enc, cb) {
+      const encoded = encode(chunk)
+      const data = Buffer.allocUnsafe(offset + encoded.length)
+      encodedChannel.copy(data)
+      encoded.copy(data, offset)
+      cb(null, data)
+    }
   })
 }
 
-/** @param {Channel} ch */
-function createDecoder (ch) {
-  const encoding = ch.encoding
-  if (!encoding) return new PassThrough()
+/** @type {<T>(x: T) => T} */
+const noop = x => x
 
-  return through.obj((chunk, enc, cb) => {
-    cb(null, encoding.decode(chunk))
+/**
+ * Filter stream, ignores chunks that do not match `ch.id` and decodes chunks
+ * that do match.
+ * @param {Channel} ch
+ * @returns {TransformStream}
+ */
+function createChannelDecoder (ch) {
+  const decode = ch.encoding ? ch.encoding.decode : noop
+
+  return new stream.Transform({
+    objectMode: true,
+    highWaterMark: 0,
+    transform (chunk, enc, cb) {
+      try {
+        const channelId = varint.decode(chunk.slice(0, varintMaxLength))
+        // Doesn't pass any data if id does not match
+        if (channelId !== ch.id) return cb()
+        const data = chunk.slice(varint.decode.bytes)
+        cb(null, decode(data))
+      } catch (err) {
+        // TODO: Should we just ignore invalid chunks?
+        cb(err)
+      }
+    }
   })
 }
 

@@ -1,15 +1,17 @@
 const channelizer = require('.')
-const through = require('through2')
+const stream = require('stream')
 const Pumpify = require('pumpify')
 const BlockStream = require('block-stream2')
 
 // Chunk stream into blocks of 4-bytes.
 const echoSpy = new Pumpify(
   new BlockStream({ size: 4, zeroPadding: false }),
-  through((chunk, enc, cb) => {
-    // Encoded chunk
-    console.log('spy', chunk)
-    cb(null, chunk)
+  new stream.Transform({
+    transform(chunk, enc, cb) {
+      // Encoded chunk
+      console.log('spy', chunk)
+      cb(null, chunk)
+    }
   })
 )
 
